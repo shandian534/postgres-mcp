@@ -183,3 +183,10 @@ devenv.local.nix
 # pre-commit
 .pre-commit-config.yaml
 *.sql
+/.idea/.gitignore
+/.idea/misc.xml
+/.idea/modules.xml
+/.idea/postgres-mcp.iml
+/.idea/inspectionProfiles/profiles_settings.xml
+/.idea/inspectionProfiles/Project_Default.xml
+/.idea/vcs.xml
