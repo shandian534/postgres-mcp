@@ -37,14 +37,17 @@ from .top_queries import TopQueriesCalc
 mcp = FastMCP("postgres-mcp")
 
 # Constants
+#pg_stat_statements 是 PostgreSQL 的一个内置扩展，用于收集 SQL 语句的执行统计信息（如执行次数、总耗时、内存使用等）
 PG_STAT_STATEMENTS = "pg_stat_statements"
+
+# hypopg 是 PostgreSQL 的第三方扩展，用于创建“虚拟索引”（不占用磁盘空间），帮助评估索引对查询性能的影响，避免实际创建索引的开销。
 HYPOPG_EXTENSION = "hypopg"
 
 ResponseType = List[types.TextContent | types.ImageContent | types.EmbeddedResource]
 
 logger = logging.getLogger(__name__)
 
-
+# class AccessMode(str, Enum)：定义一个名为 AccessMode 的枚举类，继承自 str 和 Enum。继承 str 意味着枚举成员的值是字符串类型，继承 Enum 则让该类成为一个枚举类，枚举类可用于创建一组固定的常量。
 class AccessMode(str, Enum):
     """SQL access modes for the server."""
 
@@ -58,6 +61,8 @@ current_access_mode = AccessMode.UNRESTRICTED
 shutdown_in_progress = False
 
 
+#async def get_sql_driver(): 定义一个异步函数 get_sql_driver，这意味着函数内部可能包含 await 语句，用于异步操作。
+#-> Union[SqlDriver, SafeSqlDriver]: 函数的返回值类型注解，表示函数可能返回 SqlDriver 或者 SafeSqlDriver 类型的对象。
 async def get_sql_driver() -> Union[SqlDriver, SafeSqlDriver]:
     """Get the appropriate SQL driver based on the current access mode."""
     base_driver = SqlDriver(conn=db_connection)
@@ -70,6 +75,13 @@ async def get_sql_driver() -> Union[SqlDriver, SafeSqlDriver]:
         return base_driver
 
 
+
+
+'''返回值类型：函数返回一个列表，结合上下文可知，该列表类型为 ResponseType，即 List[types.TextContent | types.ImageContent | types.EmbeddedResource]。
+types.TextContent：推测这是 mcp.types 模块里定义的一个类，用于表示文本内容。
+type="text"：作为 TextContent 类实例化时传入的参数，用于指定内容类型为文本。
+text=str(text)：把传入的 text 参数转换为字符串类型，再作为 TextContent 类实例化时的文本内容参数。
+列表包装：将 types.TextContent 类的实例包装在列表中返回，以符合 ResponseType 类型要求。'''
 def format_text_response(text: Any) -> ResponseType:
     """Format a text response."""
     return [types.TextContent(type="text", text=str(text))]
@@ -99,13 +111,23 @@ async def list_schemas() -> ResponseType:
             ORDER BY schema_type, schema_name
             """
         )
+        '''1. 条件表达式 if rows else []
+条件表达式是 Python 中一种简洁的条件判断语法，格式为 value_if_true if condition else value_if_false。这里的判断条件是 rows，在 Python 里，非空列表会被视为 True，空列表则被视为 False。
+如果 rows 不为空，即查询结果有数据，执行 [row.cells for row in rows]。
+如果 rows 为空，即查询没有返回数据，将 schemas 赋值为空列表 []。
+2. 列表推导式 [row.cells for row in rows]
+列表推导式是一种快速创建列表的语法，格式为 [expression for item in iterable]。这里：
+iterable 是 rows，表示数据库查询结果的行集合。
+item 是 row，代表 rows 中的每一行。
+expression 是 row.cells，表示提取每一行的 cells 属性。'''
         schemas = [row.cells for row in rows] if rows else []
         return format_text_response(schemas)
     except Exception as e:
         logger.error(f"Error listing schemas: {e}")
         return format_error_response(str(e))
 
-
+# @mcp.tool(description="List objects in a schema") 是一个装饰器，可能用于将 list_objects 函数注册为特定工具，并提供描述信息。
+# 使用 Field 提供参数描述
 @mcp.tool(description="List objects in a schema")
 async def list_objects(
     schema_name: str = Field(description="Schema name"),
@@ -401,6 +423,8 @@ async def execute_sql(
         logger.error(f"Error executing query: {e}")
         return format_error_response(str(e))
 
+
+# @validate_call 是 pydantic 库中的一个装饰器，从 pydantic 2.0 版本开始引入，用于在函数调用时自动验证传入的参数，确保参数符合函数定义的类型注解和约束条件。下面详细解释其作用和使用场景。
 
 @mcp.tool(description="Analyze frequently executed queries in the database and recommend optimal indexes")
 @validate_call
