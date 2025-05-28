@@ -534,8 +534,33 @@ async def get_top_queries(
 
 
 async def main():
+    #创建一个命令行参数解析器，用于解析用户输入的命令行参数。
     # Parse command line arguments
     parser = argparse.ArgumentParser(description="PostgreSQL MCP Server")
+    '''parser.add_argument：添加不同的命令行参数，包括：
+    database_url：可选的位置参数，用于指定数据库连接
+    URL。
+    --access - mode：可选参数，用于设置
+    SQL
+    访问模式，可选值为
+    AccessMode
+    枚举中的值，默认是无限制访问。
+    --transport：可选参数，用于选择
+    MCP
+    传输方式，可选值为
+    stdio
+    或
+    sse，默认是
+    stdio。
+    --sse - host：可选参数，用于指定
+    SSE
+    服务器绑定的主机，默认是
+    localhost。
+    --sse - port：可选参数，用于指定
+    SSE
+    服务器监听的端口，默认是
+    8000。'''
+
     parser.add_argument("database_url", help="Database connection URL", nargs="?")
     parser.add_argument(
         "--access-mode",
@@ -563,13 +588,19 @@ async def main():
         default=8000,
         help="Port for SSE server (default: 8000)",
     )
-
+    #parser.parse_args()：解析命令行参数并将结果存储在args对象中。
     args = parser.parse_args()
 
     # Store the access mode in the global variable
     global current_access_mode
     current_access_mode = AccessMode(args.access_mode)
 
+
+
+
+    # AnyFunction: TypeAlias = Callable[..., Any]
+    # 含义：AnyFunction 是一个类型别名，使用 TypeAlias 显式声明为类型别名。Callable[..., Any] 表示任意可调用对象，比如函数、方法、类等。... 表示该可调用对象可以接受任意数量和类型的参数，Any 表示该可调用对象的返回值可以是任意类型。
+    # add_tool的参数为AnyFunction AnyFunction 是一个类型别名，它表示一个可以接受任意数量和类型的参数，并返回任意类型的函数。
     # Add the query tool with a description appropriate to the access mode
     if current_access_mode == AccessMode.UNRESTRICTED:
         mcp.add_tool(execute_sql, description="Execute any SQL query")
@@ -598,16 +629,29 @@ async def main():
             "The MCP server will start but database operations will fail until a valid connection is established.",
         )
 
+
+    '''asyncio.get_running_loop() 是一个异步 I/O 库 asyncio 中的函数，
+    用于获取当前正在运行的事件循环。事件循环是 asyncio 的核心，负责调度和执行异步任务。
+    '''
     # Set up proper shutdown handling
     try:
         loop = asyncio.get_running_loop()
         signals = (signal.SIGTERM, signal.SIGINT)
+        '''signal 是 Python 标准库中的模块，用于处理系统信号。这里定义了一个包含两个信号的元组：
+
+        signal.SIGTERM：这是一个通用的终止信号，通常由系统或管理员发送，请求进程正常关闭。
+        signal.SIGINT：这是用户在终端按下 Ctrl+C 时发送的中断信号，用于请求进程停止运行。'''
+
+        #为每个信号添加处理函数
         for s in signals:
             loop.add_signal_handler(s, lambda s=s: asyncio.create_task(shutdown(s)))
+        '''loop.add_signal_handler 是事件循环的一个方法，用于为指定的信号注册处理函数。当事件循环接收到该信号时，会调用注册的处理函数。
+lambda s=s: asyncio.create_task(shutdown(s)) 是一个匿名函数，使用了默认参数 s=s 来避免闭包问题。asyncio.create_task 用于将 shutdown 异步函数包装成一个任务，并提交给事件循环执行。shutdown 函数应该是用于处理应用程序的关闭逻辑。'''
     except NotImplementedError:
         # Windows doesn't support signals properly
         logger.warning("Signal handling not supported on Windows")
         pass
+
 
     # Run the server with the selected transport (always async)
     if args.transport == "stdio":

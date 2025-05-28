@@ -32,7 +32,12 @@ class HealthType(str, Enum):
 
 class DatabaseHealthTool:
     """Tool for analyzing database health metrics."""
-
+    '''
+    def __init__(self, sql_driver):
+__init__ 是 Python 类中的特殊方法，也被称为构造函数。当创建类的实例时，__init__ 方法会自动调用，用于初始化对象的属性。
+self 是类方法的第一个参数，代表类的实例本身。在调用类方法时，Python 会自动将实例作为 self 参数传递给方法。
+sql_driver 是 __init__ 方法的参数，它是一个外部传入的值，代表 SQL 驱动对象，用于后续与数据库进行交互。
+    '''
     def __init__(self, sql_driver):
         self.sql_driver = sql_driver
 
@@ -49,6 +54,7 @@ class DatabaseHealthTool:
         try:
             result = ""
             try:
+                #这是集合推导式，是一种简洁创建集合的语法。它会遍历 health_type.split(",") 返回列表中的每个元素 x，对 x 进行 strip 处理后转换为 HealthType 枚举实例，再将这些实例添加到集合中。由于集合的特性是元素唯一，所以重复的枚举实例会被自动去重。
                 health_types = {HealthType(x.strip()) for x in health_type.split(",")}
             except ValueError:
                 return (
@@ -57,6 +63,8 @@ class DatabaseHealthTool:
                     + "Please try again with a comma-separated list of valid health types."
                 )
 
+            #HealthType 是代码中定义的枚举类，for t in HealthType 会遍历 HealthType 枚举类中的所有枚举成员。
+            #这是列表推导式中的条件判断部分，它会过滤掉 HealthType.ALL 这个枚举成员。也就是说，只有当 t 不等于 HealthType.ALL 时，才会执行后续的操作。
             if HealthType.ALL in health_types:
                 health_types = [t.value for t in HealthType if t != HealthType.ALL]
 
